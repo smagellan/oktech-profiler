@@ -1,0 +1,156 @@
+<project name="hu.oktech.profiler" default="help">
+
+	<property file="${user.name}.properties" />
+	<property file="build.properties" />
+
+	<property name="lib.dir" value="lib" />
+
+	<property name="temp.dir" value="tmp"/>
+	<property name="build.dir" value="tmp/build" />
+	<property name="bundle.dir" value="tmp/bundle" />
+	<property name="dist.dir" value="tmp/dist" />
+
+	<target name="guess-standard-properties">
+		<available file="${basedir}/src/main/java" type="dir" property="src.main.java" />
+		<available file="${basedir}/src/test/java" type="dir" property="src.test.java" />
+		<available file="${basedir}/web" type="dir" property="src.web" />
+	</target>
+
+	<path id="path.sources.main">
+		<path path="src/main/java" />
+	</path>
+
+	<target name="all" depends="guess-standard-properties, classpath, clean, package, run-test, bundle" />
+	
+	<target name="clean" description="Cleans the temporary directories for build and dist.">
+		<delete dir="${temp.dir}"/>
+	</target>
+	
+	<target name="classpath">
+		<mkdir dir="${lib.dir}/default/"/>
+		<path id="lib.default">
+			<fileset dir="${lib.dir}/default/">
+				<exclude name=".*.zip$"/>
+			</fileset>
+		</path>
+		<path id="lib.test">
+			<fileset dir="${lib.dir}/default/">
+				<exclude name=".*.zip$"/>
+			</fileset>
+			<fileset dir="${lib.dir}/test/">
+				<exclude name=".*.zip$"/>
+			</fileset>
+		</path>
+	</target>
+
+	<target name="compile-main-java" if="src.main.java" depends="guess-standard-properties, classpath">
+		<mkdir dir="${build.dir}/main" />
+		<javac destdir="${build.dir}/main" debug="true" debuglevel="lines,vars,source">
+			<classpath>
+				<path refid="lib.default" />
+			</classpath>
+			<src path="${basedir}/src/main/java"/>
+		</javac>
+	</target>
+	
+	<target name="package-main" if="src.main.java" depends="guess-standard-properties">
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/${project.name}.jar" manifest="src/main/conf/META-INF/runtime-manifest.mf">
+			<fileset dir="${build.dir}/main">
+			</fileset>
+			<fileset dir="src/main/java">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</jar>
+		<zip destfile="${dist.dir}/${project.name}-source.zip">
+			<fileset dir="src/main/java">
+			</fileset>
+		</zip>
+	</target>
+
+	<target name="compile-test-java" if="src.test.java" depends="guess-standard-properties, compile-main-java, package-main">
+		<mkdir dir="${build.dir}/test" />
+		<javac destdir="${build.dir}/test" debug="true" debuglevel="lines,vars,source">
+			<classpath>
+				<path refid="lib.test" />
+				<path path="${dist.dir}/${project.name}.jar"/>
+			</classpath>
+			<src path="${basedir}/src/test/java"/>
+		</javac>
+	</target>
+	
+	<target name="package-test" if="src.test.java" depends="guess-standard-properties">
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/${project.name}-test.jar">
+			<fileset dir="${build.dir}/test">
+			</fileset>
+			<fileset dir="src/test/java">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</jar>
+		<zip destfile="${dist.dir}/${project.name}-test-source.zip">
+			<fileset dir="src/test/java">
+			</fileset>
+		</zip>
+	</target>
+	
+	<target name="compile"
+		description="Compile the source codes"
+		depends="guess-standard-properties, classpath, compile-main-java, compile-test-java">
+		
+	</target>
+		
+	<target name="package"
+		depends="guess-standard-properties, compile, package-main, package-test">
+	</target>
+	
+	<target name="run-test" depends="guess-standard-properties, classpath, package-test" if="src.test.java">
+		<java classname="org.junit.runner.JUnitCore" fork="true" failonerror="true">
+			<classpath>
+				<path refid="lib.test" />
+				<path path="${dist.dir}/${project.name}.jar"/>
+				<path path="${dist.dir}/${project.name}-test.jar"/>
+			</classpath>
+			<arg value="${test.class}"/>
+		</java>
+	</target>
+	
+	<target name="bundle" depends="package">
+		<!--
+		<delete dir="${bundle.dir}"/>
+		
+		<mkdir dir="${bundle.dir}/runtime"/>
+		<unzip dest="${bundle.dir}/runtime" src="${lib.dir}/default/javassist-3.11.jar"/>
+		<unzip dest="${bundle.dir}/runtime" src="${dist.dir}/${project.name}.jar" />
+		<delete dir="${bundle.dir}/runtime/hu/oktech/profiler/analysis"/>
+		<delete dir="${bundle.dir}/runtime/hu/oktech/profiler/benchmark"/>
+		<zip destfile="${dist.dir}/${project.name}-runtime.jar" basedir="${bundle.dir}/runtime" />
+		-->
+
+<!--		<mkdir dir="${bundle.dir}/report"/>
+		<unzip dest="${bundle.dir}/report" src="${lib.dir}/default/javax.xml.stream-api.jar"/>
+		<unzip dest="${bundle.dir}/report" src="${lib.dir}/default/stax2-api-3.0.1.jar"/>
+		<unzip dest="${bundle.dir}/report" src="${lib.dir}/default/woodstox-core-4.0.5.jar"/>
+		<unzip dest="${bundle.dir}/report" src="${dist.dir}/${project.name}.jar" />
+		<delete dir="${bundle.dir}/report/hu/oktech/profiler/runtime"/>
+		
+		<jar destfile="${dist.dir}/${project.name}-report.jar" manifest="src/main/conf/META-INF/report-manifest.mf">
+			<fileset dir="${bundle.dir}/report">
+			</fileset>
+		</jar>
+		-->
+	</target>
+	
+	<target name="help">
+		<echo>
+    ant clean
+    ant compile
+	ant package
+    ant run-test
+	ant bundle
+
+    ant all
+		</echo>
+	</target>
+
+</project>

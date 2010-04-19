@@ -1,0 +1,3 @@
+syntax: regexp
+
+^hu.oktech.profiler/bin$

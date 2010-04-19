@@ -1,0 +1,2 @@
+Premain-Class: hu.oktech.profiler.runtime.Profiler
+Main-Class: hu.oktech.profiler.runtime.Profiler
